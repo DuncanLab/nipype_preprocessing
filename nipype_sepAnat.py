@@ -4,6 +4,7 @@ import nipype.interfaces.afni as afni       # afni
 import nipype.interfaces.ants as ants       # ants
 import nipype.pipeline.engine as pe         # the workflow and node wrappers
 import nipype.interfaces.io as nio          # Input/Output
+import nipype.interfaces.c3 as c3           # fsl -> ANTs
 import nipype.interfaces.utility as util    # utility
 import time                                 # Time used to measure length of pipeline
 
@@ -65,9 +66,45 @@ tstat = pe.Node(afni.TStat(args = '-mean',
                            outputtype = 'NIFTI_GZ'),
                 name="tstat")
 
-mean2anat = pe.Node(fsl.FLIRT(dof = 6),
+
+mean2anatAnts = pe.Node(ants.Registration(metric=['MI'],
+                                          metric_weight=[1.0],
+                                          shrink_factors=[[8],[4],[2],[1]],
+                                          smoothing_sigmas=[[3.0],[2.0],[1.0],[0.0]],
+                                          transforms=['Rigid']),
+                                          #number_of_iterations=[[1000, 500, 250, 100]],
+                                          #args= '--convergence [1000x500x250x100,1e-6,10]'),
+                                          name='mean2anatAnts')
+
+
+'''mean2anatAnts = pe.Node(ants.Registration(metric=['MI'],
+                                          metric_weight=[1],
+                                          args= '--convergence [1000x500x250x100,1e-6,10]',
+                                          args= '--shrink-factors 8x4x2x1  '
+                                                '--smoothing-sigmas 3x2x1x0vox  --dimensionality 3  --use-histogram-matching 1  '
+                                                '--output [mean2Anat, mean2AnatWarped.nii]  --transform Rigid[.01]'),
+name='mean2anatAnts')'''
+
+
+
+
+"""mean2anatAnts.inputs.metric = ['MI']
+mean2anatAnts.inputs.metric_weight = [1]
+mean2anatAnts.inputs.shrink_factors = [[8],[4],[2],[1]]
+mean2anatAnts.inputs.transforms = ['Rigid']
+mean2anatAnts.inputs.convergence_threshold = [.000001]
+mean2anatAnts.inputs.smoothing_sigmas = [[3],[2],[1],[0]]
+"""
+
+
+
+mean2anat = pe.Node(fsl.FLIRT(dof = 6,
+                              cost = 'mutualinfo'),
                     name='mean2anat')
 
+convert2itk = pe.Node(c3.C3dAffineTool(fsl2ras = True,
+                                    itk_transform = True),
+                      name='convert2itk')
 
 #======================================================================
 # 3. SPECIFY WORKFLOWS
@@ -131,7 +168,7 @@ selectfilesAnat = pe.Node(nio.SelectFiles(templatesAnat), name="selectfilesAnat"
 # DataSink for Anatomical Output
 datasinkAnat = pe.Node(nio.DataSink(base_directory=experiment_dir,
                          container=output_dir),
-                name="datasink")
+                name="datasinkAnat")
 
 
 # Use the following DataSink output substitutions
@@ -232,9 +269,9 @@ templates2 = {'func2': experiment_dir + 'output_firstSteps/motion_correct/'+ ses
 
 selectfiles2 = pe.Node(nio.SelectFiles(templates2), name="selectfiles2")
 
+
 # Set up a extract node for the last run after motion control and get the mean
-preproc2.connect([(infosource2, selectfiles2, [('subject_id', 'subject_id'),
-                                            ('session_id', 'session_id')]),
+preproc2.connect([(infosource2, selectfiles2, [('subject_id', 'subject_id')]),
                   (selectfiles2, tstat, [('func2', 'in_file')]),
                   (tstat, betFunc, [('out_file', 'in_file')]),
                   ])
@@ -242,11 +279,6 @@ preproc2.connect([(infosource2, selectfiles2, [('subject_id', 'subject_id'),
 preproc2.connect([(tstat, datasink, [('out_file', 'tstat')]),
                   (betFunc, datasink, [('out_file', 'betFunc')]),
                    ])
-
-
-# Use the following DataSink output substitutions
-substitutions = [('_subject_id_', '')]
-datasinkAnat.inputs.substitutions = substitutions
 
 #======================================================================
 # 7. Connect Anatomical to Mean Functional image
@@ -260,15 +292,33 @@ infosource3 = pe.Node(util.IdentityInterface(fields=['subject_id',
 infosource3.iterables = [('subject_id', subject_list)]
 
 # Select the Skull Stripped Anatomical image for each subject
-templates3 = {'func3': experiment_dir + 'output_firstSteps/sill_stripped/_{subject_id}/*.nii.gz'}
+templates3 = {'noskull': experiment_dir + 'output_firstSteps/skull_stripped/{subject_id}/*.nii.gz'}
 
-selectfiles3 = pe.Node(nio.SelectFiles(templates3), name="selectfiles3")
+selectfilesSkullStripped = pe.Node(nio.SelectFiles(templates3), name="selectfilesSkullStripped")
 
-preproc2.connect([(infosource3, selectfiles3, [('subject_id', 'subject_id'),
-                                            ('session_id', 'session_id')]),
-                  (selectfiles3, mean2anat, [('func3', 'reference')]),
-                  (betFunc, mean2anat, [('out_file', 'in_file')]),
-                  (mean2anat, datasink, [('out_file', 'mean2anat')]),
+# DataSink
+datasink2 = pe.Node(nio.DataSink(base_directory=experiment_dir,
+                         container=output_dir),
+                name="datasink2")
+
+# Use the following DataSink output substitutions
+substitutions = [('_subject_id_', '')]
+datasink2.inputs.substitutions = substitutions
+
+#preproc2.connect([(infosource3, selectfilesSkullStripped, [('subject_id', 'subject_id'),
+#                                            ('session_id', 'session_id')]),
+#                  (selectfilesSkullStripped, mean2anat, [('noskull', 'reference')]),
+#                  (betFunc, mean2anat, [('out_file', 'in_file')]),
+#                  (mean2anat, datasink2, [('out_file', 'mean2anat')]),
+#                  (mean2anat, datasink2, [('out_matrix_file', 'mean2anatMatrix')]),
+#                   ])
+
+
+preproc2.connect([(infosource3, selectfilesSkullStripped, [('subject_id', 'subject_id')]),
+                  (selectfilesSkullStripped, mean2anatAnts, [('noskull', 'fixed_image')]),
+                  (betFunc, mean2anatAnts, [('out_file', 'moving_image')]),
+                  (mean2anatAnts, datasink2, [('warped_image', 'mean2anat')]),
+                  (mean2anatAnts, datasink2, [('forward_transforms', 'mean2anatMatrix')]),
                    ])
 
 #======================================================================
@@ -276,9 +326,9 @@ preproc2.connect([(infosource3, selectfiles3, [('subject_id', 'subject_id'),
 #======================================================================
 
 # Run the Nodes
-preprocAnat.run('MultiProc', plugin_args={'n_procs': 3})
-preproc.run('MultiProc', plugin_args={'n_procs': 3})
-#preproc2.run('MultiProc', plugin_args={'n_procs': 3})
+#preprocAnat.run('MultiProc', plugin_args={'n_procs': 3})
+#preproc.run('MultiProc', plugin_args={'n_procs': 3})
+preproc2.run('MultiProc', plugin_args={'n_procs': 3})
 
 toc = time.clock()
 print("This process took " + str(toc-tic) + " minutes")
