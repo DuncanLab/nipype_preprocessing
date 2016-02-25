@@ -67,14 +67,18 @@ tstat = pe.Node(afni.TStat(args = '-mean',
                 name="tstat")
 
 
-mean2anatAnts = pe.Node(ants.Registration(metric=['MI'],
-                                          metric_weight=[1.0],
-                                          shrink_factors=[[8],[4],[2],[1]],
-                                          smoothing_sigmas=[[3.0],[2.0],[1.0],[0.0]],
-                                          transforms=['Rigid']),
-                                          #number_of_iterations=[[1000, 500, 250, 100]],
-                                          #args= '--convergence [1000x500x250x100,1e-6,10]'),
-                                          name='mean2anatAnts')
+mean2anatAnts = pe.Node(ants.Registration(args='--float',
+                                            metric=['MI'],
+                                            metric_weight=[1.0],
+                                            shrink_factors=[[8,4,2,1]],
+                                            smoothing_sigmas=[[3.0,2.0,1.0,0.0]],
+                                            transforms=['Rigid'],
+                                            transform_parameters=[(0.1,)],
+                                            number_of_iterations=[[1000,500,250,100]],
+                                            convergence_threshold=[1e-06],
+                                            convergence_window_size=[10],
+                                            output_warped_image='output_warped_image.nii.gz'),
+                                            name='mean2anatAnts')
 
 
 '''mean2anatAnts = pe.Node(ants.Registration(metric=['MI'],
@@ -269,6 +273,15 @@ templates2 = {'func2': experiment_dir + 'output_firstSteps/motion_correct/'+ ses
 
 selectfiles2 = pe.Node(nio.SelectFiles(templates2), name="selectfiles2")
 
+# DataSink
+datasink2 = pe.Node(nio.DataSink(base_directory=experiment_dir,
+                         container=output_dir),
+                name="datasink2")
+
+# Use the following DataSink output substitutions
+substitutions = [('_subject_id_', '')]
+datasink2.inputs.substitutions = substitutions
+
 
 # Set up a extract node for the last run after motion control and get the mean
 preproc2.connect([(infosource2, selectfiles2, [('subject_id', 'subject_id')]),
@@ -276,8 +289,8 @@ preproc2.connect([(infosource2, selectfiles2, [('subject_id', 'subject_id')]),
                   (tstat, betFunc, [('out_file', 'in_file')]),
                   ])
 
-preproc2.connect([(tstat, datasink, [('out_file', 'tstat')]),
-                  (betFunc, datasink, [('out_file', 'betFunc')]),
+preproc2.connect([(tstat, datasink2, [('out_file', 'tstat')]),
+                  (betFunc, datasink2, [('out_file', 'betFunc')]),
                    ])
 
 #======================================================================
@@ -296,15 +309,6 @@ templates3 = {'noskull': experiment_dir + 'output_firstSteps/skull_stripped/{sub
 
 selectfilesSkullStripped = pe.Node(nio.SelectFiles(templates3), name="selectfilesSkullStripped")
 
-# DataSink
-datasink2 = pe.Node(nio.DataSink(base_directory=experiment_dir,
-                         container=output_dir),
-                name="datasink2")
-
-# Use the following DataSink output substitutions
-substitutions = [('_subject_id_', '')]
-datasink2.inputs.substitutions = substitutions
-
 #preproc2.connect([(infosource3, selectfilesSkullStripped, [('subject_id', 'subject_id'),
 #                                            ('session_id', 'session_id')]),
 #                  (selectfilesSkullStripped, mean2anat, [('noskull', 'reference')]),
@@ -314,7 +318,8 @@ datasink2.inputs.substitutions = substitutions
 #                   ])
 
 
-preproc2.connect([(infosource3, selectfilesSkullStripped, [('subject_id', 'subject_id')]),
+preproc2.connect([(infosource3, selectfilesSkullStripped, [('subject_id', 'subject_id'),
+                                            ('session_id', 'session_id')]),
                   (selectfilesSkullStripped, mean2anatAnts, [('noskull', 'fixed_image')]),
                   (betFunc, mean2anatAnts, [('out_file', 'moving_image')]),
                   (mean2anatAnts, datasink2, [('warped_image', 'mean2anat')]),
