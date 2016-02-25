@@ -81,27 +81,6 @@ mean2anatAnts = pe.Node(ants.Registration(args='--float',
                                             name='mean2anatAnts')
 
 
-'''mean2anatAnts = pe.Node(ants.Registration(metric=['MI'],
-                                          metric_weight=[1],
-                                          args= '--convergence [1000x500x250x100,1e-6,10]',
-                                          args= '--shrink-factors 8x4x2x1  '
-                                                '--smoothing-sigmas 3x2x1x0vox  --dimensionality 3  --use-histogram-matching 1  '
-                                                '--output [mean2Anat, mean2AnatWarped.nii]  --transform Rigid[.01]'),
-name='mean2anatAnts')'''
-
-
-
-
-"""mean2anatAnts.inputs.metric = ['MI']
-mean2anatAnts.inputs.metric_weight = [1]
-mean2anatAnts.inputs.shrink_factors = [[8],[4],[2],[1]]
-mean2anatAnts.inputs.transforms = ['Rigid']
-mean2anatAnts.inputs.convergence_threshold = [.000001]
-mean2anatAnts.inputs.smoothing_sigmas = [[3],[2],[1],[0]]
-"""
-
-
-
 mean2anat = pe.Node(fsl.FLIRT(dof = 6,
                               cost = 'mutualinfo'),
                     name='mean2anat')
@@ -297,27 +276,6 @@ preproc2.connect([(tstat, datasink2, [('out_file', 'tstat')]),
 #======================================================================
 # 7. Connect Anatomical to Mean Functional image
 #======================================================================
-"""
-# Infosource - a function free node to iterate over the list of subject names
-infosource3 = pe.Node(util.IdentityInterface(fields=['subject_id',
-                                            'session_id']),
-                  name="infosource3")
-
-infosource3.iterables = [('subject_id', subject_list)]
-
-# Select the Skull Stripped Anatomical image for each subject
-templates3 = {'noskull': experiment_dir + 'output_firstSteps/skull_stripped/{subject_id}/*.nii.gz'}
-
-selectfilesSkullStripped = pe.Node(nio.SelectFiles(templates3), name="selectfilesSkullStripped")
-"""
-#preproc2.connect([(infosource3, selectfilesSkullStripped, [('subject_id', 'subject_id'),
-#                                            ('session_id', 'session_id')]),
-#                  (selectfilesSkullStripped, mean2anat, [('noskull', 'reference')]),
-#                  (betFunc, mean2anat, [('out_file', 'in_file')]),
-#                  (mean2anat, datasink2, [('out_file', 'mean2anat')]),
-#                  (mean2anat, datasink2, [('out_matrix_file', 'mean2anatMatrix')]),
-#                   ])
-
 
 preproc2.connect([(selectfiles2, mean2anatAnts, [('noskull', 'fixed_image')]),
                   (betFunc, mean2anatAnts, [('out_file', 'moving_image')]),

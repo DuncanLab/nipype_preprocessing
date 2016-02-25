@@ -26,8 +26,8 @@
       <file leaf-file-name="nipype_sepAnat.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/nipype_sepAnat.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="4.050239">
-              <caret line="259" column="21" selection-start-line="259" selection-start-column="21" selection-end-line="259" selection-end-column="21" />
+            <state vertical-scroll-proportion="3.8708134">
+              <caret line="257" column="47" selection-start-line="257" selection-start-column="47" selection-end-line="257" selection-end-column="47" />
               <folding>
                 <element signature="e#0#62#0" expanded="true" />
               </folding>
@@ -73,8 +73,8 @@
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="908" />
-    <option name="y" value="650" />
+    <option name="x" value="830" />
+    <option name="y" value="199" />
     <option name="width" value="1584" />
     <option name="height" value="1311" />
   </component>
@@ -370,7 +370,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="908" y="650" width="1584" height="1311" extended-state="0" />
+    <frame x="830" y="199" width="1584" height="1311" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.09916826" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -536,8 +536,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/nipype_sepAnat.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="4.050239">
-          <caret line="259" column="21" selection-start-line="259" selection-start-column="21" selection-end-line="259" selection-end-column="21" />
+        <state vertical-scroll-proportion="3.8708134">
+          <caret line="257" column="47" selection-start-line="257" selection-start-column="47" selection-end-line="257" selection-end-column="47" />
           <folding>
             <element signature="e#0#62#0" expanded="true" />
           </folding>
