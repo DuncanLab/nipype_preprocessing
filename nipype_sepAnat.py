@@ -269,7 +269,8 @@ infosource2 = pe.Node(util.IdentityInterface(fields=['subject_id',
 infosource2.iterables = [('subject_id', subject_list)]
 
 # Select the last run for each subject
-templates2 = {'func2': experiment_dir + 'output_firstSteps/motion_correct/'+ session_list[-1] + '_{subject_id}/*.nii.gz'}
+templates2 = {'func2': experiment_dir + 'output_firstSteps/motion_correct/'+ session_list[-1] + '_{subject_id}/*.nii.gz',
+              'noskull': experiment_dir + 'output_firstSteps/skull_stripped/{subject_id}/*.nii.gz'}
 
 selectfiles2 = pe.Node(nio.SelectFiles(templates2), name="selectfiles2")
 
@@ -296,7 +297,7 @@ preproc2.connect([(tstat, datasink2, [('out_file', 'tstat')]),
 #======================================================================
 # 7. Connect Anatomical to Mean Functional image
 #======================================================================
-
+"""
 # Infosource - a function free node to iterate over the list of subject names
 infosource3 = pe.Node(util.IdentityInterface(fields=['subject_id',
                                             'session_id']),
@@ -308,7 +309,7 @@ infosource3.iterables = [('subject_id', subject_list)]
 templates3 = {'noskull': experiment_dir + 'output_firstSteps/skull_stripped/{subject_id}/*.nii.gz'}
 
 selectfilesSkullStripped = pe.Node(nio.SelectFiles(templates3), name="selectfilesSkullStripped")
-
+"""
 #preproc2.connect([(infosource3, selectfilesSkullStripped, [('subject_id', 'subject_id'),
 #                                            ('session_id', 'session_id')]),
 #                  (selectfilesSkullStripped, mean2anat, [('noskull', 'reference')]),
@@ -318,9 +319,7 @@ selectfilesSkullStripped = pe.Node(nio.SelectFiles(templates3), name="selectfile
 #                   ])
 
 
-preproc2.connect([(infosource3, selectfilesSkullStripped, [('subject_id', 'subject_id'),
-                                            ('session_id', 'session_id')]),
-                  (selectfilesSkullStripped, mean2anatAnts, [('noskull', 'fixed_image')]),
+preproc2.connect([(selectfiles2, mean2anatAnts, [('noskull', 'fixed_image')]),
                   (betFunc, mean2anatAnts, [('out_file', 'moving_image')]),
                   (mean2anatAnts, datasink2, [('warped_image', 'mean2anat')]),
                   (mean2anatAnts, datasink2, [('forward_transforms', 'mean2anatMatrix')]),
