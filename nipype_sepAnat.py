@@ -4,21 +4,20 @@ import nipype.interfaces.afni as afni       # afni
 import nipype.interfaces.ants as ants       # ants
 import nipype.pipeline.engine as pe         # the workflow and node wrappers
 import nipype.interfaces.io as nio          # Input/Output
-import nipype.interfaces.c3 as c3           # fsl -> ANTs
 import nipype.interfaces.utility as util    # utility
-import time                                 # Time used to measure length of pipeline
 
 #======================================================================
 # 1. Variable Specification
 #======================================================================
 
-tic = time.clock()
-experiment_dir = '/Users/duncanlab/Documents/People/Shafquat/'             # location of data folder
+experiment_dir = '/Volumes/homes/Shafquat/'             # location of data folder
 
 # Count all the subfolders within a given directory
-subs = next(os.walk(experiment_dir+'/Subjects'))[1]
+subs = next(os.walk(experiment_dir+'/Subjects/'))[1]
 subject_list = [] # Initialize an empty list to store subjects
-session_list = ['Run1', 'Run2'] #, 'Run3', 'Run4', 'Run5']              # list of session identifiers
+session_list = ['Run1', 'Run2', 'Run3', 'Run4', 'Run5']              # list of session identifiers
+# Set a last run based on the list of runs
+last_run = session_list[-1]                 # Make sure to change the hardcoded last_run value within the picklast function below
 
 # list of subject identifiers
 for subject in subs:
@@ -31,7 +30,6 @@ number_of_slices = 40                     # number of slices in volume
 TR = 2.0                                  # time repetition of volume
 smoothing_size = 6                        # size of FWHM in mm
 number_volumes_trim = 8                   # size of FWHM in mm
-
 #======================================================================
 # 2. NODE SPECIFICATION
 #======================================================================
@@ -75,19 +73,58 @@ mean2anatAnts = pe.Node(ants.Registration(args='--float',
                                             transforms=['Rigid'],
                                             transform_parameters=[(0.1,)],
                                             number_of_iterations=[[1000,500,250,100]],
+                                            write_composite_transform = True,
                                             convergence_threshold=[1e-06],
                                             convergence_window_size=[10],
                                             output_warped_image='output_warped_image.nii.gz'),
                                             name='mean2anatAnts')
 
 
-mean2anat = pe.Node(fsl.FLIRT(dof = 6,
-                              cost = 'mutualinfo'),
-                    name='mean2anat')
+anat2MNI = pe.Node(ants.Registration(args='--float',
+                                            metric=['Mattes'] * 2 + [['Mattes', 'CC']],
+                                            metric_weight=[1] * 2 + [[0.5, 0.5]],
+                                            radius_or_number_of_bins = [32] * 2 + [[32, 4]],
+                                            sampling_strategy = ['Regular'] * 2 + [[None, None]],
+                                            sampling_percentage = [0.3] * 2 + [[None, None]],
+                                            use_histogram_matching = [False] * 2 + [True],
+                                            shrink_factors=[[3, 2, 1]] * 2 + [[4, 2, 1]],
+                                            smoothing_sigmas=[[4, 2, 1]] * 2 + [[1, 0.5, 0]],
+                                            sigma_units = ['vox'] * 3,
+                                            transforms=['Rigid', 'Affine', 'SyN'],
+                                            transform_parameters=[(0.1,),(0.1,), (0.2, 3.0, 0.0)],
+                                            number_of_iterations=[[10000, 11110, 11110]] * 2 + [[100, 30, 20]],
+                                            write_composite_transform = True,
+                                            collapse_output_transforms = True,
+                                            initial_moving_transform_com = True,
+                                            convergence_threshold= [1.e-8] * 2 + [-0.01],
+                                            convergence_window_size=[20] * 2 + [5],
+                                            use_estimate_learning_rate_once = [True] * 3,
+                                            winsorize_lower_quantile = 0.005,
+                                            winsorize_upper_quantile = 0.995,
+                                            num_threads = 2,
+                                            #output_transform_prefix = "MNI_warped_",
+                                            output_warped_image='MNI_warped_image.nii.gz'),
+                                            name='anat2MNI')
+anat2MNI.plugin_args = {'qsub_args': '-pe orte 4',
+                       'sbatch_args': '--mem=6G -c 4'}
 
-convert2itk = pe.Node(c3.C3dAffineTool(fsl2ras = True,
-                                    itk_transform = True),
-                      name='convert2itk')
+
+
+merge = pe.Node(util.Merge(2), iterfield=['in2'], name='mergexfm')
+
+warpmean = pe.Node(ants.ApplyTransforms( input_image_type = 0,
+                                         interpolation = 'Linear',
+                                         invert_transform_flags = [False, False],
+                                         terminal_output = 'file'),
+                                         name='warpmean')
+
+
+applyTransFunc = pe.Node(ants.ApplyTransforms(input_image_type = 3,
+                                        interpolation = 'BSpline',
+                                        invert_transform_flags = [False, False],
+                                        terminal_output = 'file'),
+                                        iterfield=['input_image', 'transforms'],
+                                        name='applyTransFunc')
 
 #======================================================================
 # 3. SPECIFY WORKFLOWS
@@ -170,13 +207,10 @@ extract_ref = pe.Node(interface=fsl.ExtractROI(t_size=1),
 # Pick the last file from the list of files
 def  picklast(path_to_run):
     import os
+    last_run = 'Run5'
 
     # get path to subject
     subject = os.path.dirname(os.path.dirname(path_to_run))
-    # all runs in subject path stored in a list
-    runs = next(os.walk(subject))[1]
-    # Get last run
-    last_run = str(runs[-1])
     selected_run = subject + "/" + last_run + "/" + last_run + ".nii.gz"
 
     return selected_run
@@ -191,7 +225,7 @@ def getlastvolume(func):
     funcfile = func
     _,_,_,timepoints = load(funcfile).get_shape()
     # To return middle volume use (timepoints/2)-1
-    return (timepoints)
+    return (timepoints-1)
 
 preproc.connect(sliceTiming, ('slice_time_corrected_file', getlastvolume), extract_ref, 't_min')
 
@@ -236,7 +270,7 @@ preproc.connect([(infosource, selectfiles, [('subject_id', 'subject_id'),
 # 6.5 New preprocess pipeline to retrieve motion corrected files
 #======================================================================
 
-# Functional Workflow
+# Workflow after motion correction
 preproc2 = pe.Workflow(name='preproc2')
 preproc2.base_dir = os.path.join(experiment_dir, working_dir)
 
@@ -248,8 +282,9 @@ infosource2 = pe.Node(util.IdentityInterface(fields=['subject_id',
 infosource2.iterables = [('subject_id', subject_list)]
 
 # Select the last run for each subject
-templates2 = {'func2': experiment_dir + 'output_firstSteps/motion_correct/'+ session_list[-1] + '_{subject_id}/*.nii.gz',
-              'noskull': experiment_dir + 'output_firstSteps/skull_stripped/{subject_id}/*.nii.gz'}
+templates2 = {'func2': experiment_dir + 'output_firstSteps/motion_correct/'+ last_run + '_{subject_id}/*.nii.gz',
+              'noskull': experiment_dir + 'output_firstSteps/skull_stripped/{subject_id}/*.nii.gz',
+              'MNI': '/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz'}
 
 selectfiles2 = pe.Node(nio.SelectFiles(templates2), name="selectfiles2")
 
@@ -280,20 +315,75 @@ preproc2.connect([(tstat, datasink2, [('out_file', 'tstat')]),
 preproc2.connect([(selectfiles2, mean2anatAnts, [('noskull', 'fixed_image')]),
                   (betFunc, mean2anatAnts, [('out_file', 'moving_image')]),
                   (mean2anatAnts, datasink2, [('warped_image', 'mean2anat')]),
-                  (mean2anatAnts, datasink2, [('forward_transforms', 'mean2anatMatrix')]),
+                  #(mean2anatAnts, datasink2, [('forward_transforms', 'mean2anatMatrix')]),
+                  (mean2anatAnts, datasink2, [('composite_transform', 'mean2anatMatrix_Composites')])
                    ])
 
 #======================================================================
-# 8. Run, Forrest, Run!
+# 8. Compute registration between subjects' structural and MNI template
+#======================================================================
+
+preproc2.connect([(selectfiles2, anat2MNI, [('MNI', 'fixed_image')]),
+                  (selectfiles2, anat2MNI, [('noskull', 'moving_image')]),
+                  (anat2MNI, datasink2, [('warped_image', 'MNI_warped')]),
+                  (anat2MNI, datasink2, [('composite_transform', 'MNI_warpedMatrix')])
+                   ])
+
+#======================================================================
+# 8. register functional images anatomical and MNI template using ANTS in a new workflow
+#======================================================================
+
+# Registration Workflow
+preprocReg = pe.Workflow(name='preprocRegister')
+preprocReg.base_dir = os.path.join(experiment_dir, working_dir)
+
+# Infosource - a function free node to iterate over the list of subject names
+infosourceReg = pe.Node(util.IdentityInterface(fields=['subject_id',
+                                            'session_id']),
+                  name="infosourceReg")
+
+infosourceReg.iterables = [('subject_id', subject_list)]
+
+# Select the last run for each subject
+templatesReg = {'mean2anat': experiment_dir + 'output_firstSteps/mean2anat/{subject_id}/*.nii.gz',
+                'mean2anatMatrix': experiment_dir + 'output_firstSteps/mean2anatMatrix_Composites/{subject_id}/*.h5',
+                'MNI_warped': experiment_dir + 'output_firstSteps/MNI_warped/{subject_id}/*.nii.gz',
+                'MNI_warpedMatrix': experiment_dir + 'output_firstSteps/MNI_warpedMatrix/{subject_id}/*.h5',
+                'MNI': '/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz',
+                'func_mc': experiment_dir + 'output_firstSteps/motion_correct/{session_id}_{subject_id}/*.nii.gz'}
+
+selectfilesReg = pe.Node(nio.SelectFiles(templatesReg), name="selectfilesReg")
+
+# DataSink
+datasinkReg = pe.Node(nio.DataSink(base_directory=experiment_dir,
+                         container=output_dir),
+                name="datasinkReg")
+
+# Use the following DataSink output substitutions
+substitutions = [('_subject_id', ''),
+                 ('_session_id_', '')]
+datasinkReg.inputs.substitutions = substitutions
+
+preprocReg.connect([(infosource, selectfilesReg, [('subject_id', 'subject_id'),
+                                            ('session_id', 'session_id')]),
+                    (selectfilesReg, merge, [('MNI_warpedMatrix', 'in2')]),
+                    (selectfilesReg, merge, [('mean2anatMatrix', 'in1')]),
+                    (merge, applyTransFunc, [('out', 'transforms')]),
+                    (selectfilesReg, applyTransFunc, [('func_mc', 'input_image')]),
+                    (selectfilesReg, applyTransFunc, [('MNI', 'reference_image')]),
+                    (applyTransFunc, datasinkReg, [('output_image', 'warpedfunc')]),
+                   ])
+
+
+#======================================================================
+# 9. Run, Forrest, Run!
 #======================================================================
 
 # Run the Nodes
 #preprocAnat.run('MultiProc', plugin_args={'n_procs': 3})
 #preproc.run('MultiProc', plugin_args={'n_procs': 3})
-preproc2.run('MultiProc', plugin_args={'n_procs': 3})
-
-toc = time.clock()
-print("This process took " + str(toc-tic) + " minutes")
+#preproc.run('MultiProc', plugin_args={'n_procs': 3})
+preprocReg.run('MultiProc', plugin_args={'n_procs': 1})
 
 #======================================================================
 # . Return output to subject directories
