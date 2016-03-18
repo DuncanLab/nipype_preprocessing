@@ -23,7 +23,7 @@ last_run = session_list[-1]                 # Make sure to change the hardcoded 
 for subject in subs:
     subject_list.append(subject)
 
-output_dir = 'output_firstSteps'          # name of output folder
+output_dir = 'output_firstSteps_old'          # name of output folder
 working_dir = 'workingdir_firstSteps'     # name of working directory
 
 number_of_slices = 40                     # number of slices in volume
@@ -293,8 +293,8 @@ infosource2 = pe.Node(util.IdentityInterface(fields=['subject_id',
 infosource2.iterables = [('subject_id', subject_list)]
 
 # Select the last run for each subject
-templates2 = {'func2': experiment_dir + 'output_firstSteps/motion_correct/'+ last_run + '_{subject_id}/*.nii.gz',
-              'noskull': experiment_dir + 'output_firstSteps/skull_stripped/{subject_id}/*.nii.gz',
+templates2 = {'func2': experiment_dir + 'output_firstSteps_old/motion_correct/'+ last_run + '_{subject_id}/*.nii.gz',
+              'noskull': experiment_dir + 'output_firstSteps_old/skull_stripped/{subject_id}/*.nii.gz',
               'MNI': '/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz'}
 
 selectfiles2 = pe.Node(nio.SelectFiles(templates2), name="selectfiles2")
@@ -356,12 +356,12 @@ infosourceReg = pe.Node(util.IdentityInterface(fields=['subject_id',
 infosourceReg.iterables = [('subject_id', subject_list)]
 
 # Select the last run for each subject
-templatesReg = {'mean2anat': experiment_dir + 'output_firstSteps/mean2anat/{subject_id}/*.nii.gz',
-                'mean2anatMatrix': experiment_dir + 'output_firstSteps/mean2anatMatrix_Composites/{subject_id}/*.h5',
-                'MNI_warped': experiment_dir + 'output_firstSteps/MNI_warped/{subject_id}/*.nii.gz',
-                'MNI_warpedMatrix': experiment_dir + 'output_firstSteps/MNI_warpedMatrix/{subject_id}/*.h5',
+templatesReg = {'mean2anat': experiment_dir + 'output_firstSteps_old/mean2anat/{subject_id}/*.nii.gz',
+                'mean2anatMatrix': experiment_dir + 'output_firstSteps_old/mean2anatMatrix_Composites/{subject_id}/*.h5',
+                'MNI_warped': experiment_dir + 'output_firstSteps_old/MNI_warped/{subject_id}/*.nii.gz',
+                'MNI_warpedMatrix': experiment_dir + 'output_firstSteps_old/MNI_warpedMatrix/{subject_id}/*.h5',
                 'MNI': experiment_dir + 'MNI_3mm.nii',
-                'func_mc': experiment_dir + 'output_firstSteps/motion_correct/{session_id}_{subject_id}/*.nii.gz'}
+                'func_mc': experiment_dir + 'output_firstSteps_old/motion_correct/{session_id}_{subject_id}/*.nii.gz'}
 
 selectfilesReg = pe.Node(nio.SelectFiles(templatesReg), name="selectfilesReg")
 
@@ -405,13 +405,13 @@ preprocReg.run('MultiProc', plugin_args={'n_procs': 3})
 #======================================================================
 """
 # get all the subfolders within a given directory
-num_folders = next(os.walk(experiment_dir+'/output_firstSteps/final_output'))[1]
+num_folders = next(os.walk(experiment_dir+'/output_firstSteps_old/final_output'))[1]
 
 # move file
 for folder in num_folders:
-    dir_files = os.listdir(experiment_dir+'/output_firstSteps/final_output/'+folder+'/')
+    dir_files = os.listdir(experiment_dir+'/output_firstSteps_old/final_output/'+folder+'/')
     for file_name in dir_files:
-        full_file_name = experiment_dir+'/output_firstSteps/final_output/'+folder+'/' + '/' + file_name
+        full_file_name = experiment_dir+'/output_firstSteps_old/final_output/'+folder+'/' + '/' + file_name
         if os.path.isfile(full_file_name):
             shutil.copy(full_file_name, experiment_dir+'/Subjects/'+folder[-6:]+'/'+folder[0:4]+'/')
 """

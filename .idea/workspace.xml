@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="a72ad77b-bbaf-44b6-ae43-359a82a0b94e" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Pipeline.py" afterPath="$PROJECT_DIR$/Pipeline.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/nipype_sepAnat.py" afterPath="$PROJECT_DIR$/nipype_sepAnat.py" />
     </list>
     <ignored path="prepocessing.iws" />
@@ -27,8 +28,8 @@
       <file leaf-file-name="Pipeline.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Pipeline.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.9518214">
-              <caret line="54" column="96" selection-start-line="54" selection-start-column="96" selection-end-line="54" selection-end-column="96" />
+            <state vertical-scroll-proportion="0.17626321">
+              <caret line="10" column="71" selection-start-line="10" selection-start-column="71" selection-end-line="10" selection-end-column="71" />
               <folding>
                 <element signature="e#0#62#0" expanded="true" />
               </folding>
@@ -55,14 +56,14 @@
         <option value="$PROJECT_DIR$/preprocessing.py" />
         <option value="$PROJECT_DIR$/test.py" />
         <option value="$PROJECT_DIR$/nipype_preprocessing.py" />
-        <option value="$PROJECT_DIR$/Pipeline.py" />
         <option value="$PROJECT_DIR$/nipype_sepAnat.py" />
+        <option value="$PROJECT_DIR$/Pipeline.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="1047" />
-    <option name="y" value="37" />
+    <option name="x" value="1340" />
+    <option name="y" value="32" />
     <option name="width" value="1176" />
     <option name="height" value="1332" />
   </component>
@@ -119,7 +120,7 @@
     <property name="SearchEverywhereHistoryKey" value="project in&#9;null&#9;null&#10;project int&#9;null&#9;null&#10;project i&#9;null&#9;null&#10;project inter&#9;null&#9;null&#10;console&#9;ACTION&#9;com.jetbrains.python.console.RunPythonConsoleAction" />
     <property name="settings.editor.selected.configurable" value="vcs.Git" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/Pipeline.py" />
   </component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
@@ -129,7 +130,7 @@
       </console-settings>
     </option>
   </component>
-  <component name="RunManager" selected="Python.nipype_sepAnat">
+  <component name="RunManager" selected="Python.Pipeline">
     <configuration default="false" name="preprocessing" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -194,6 +195,23 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="prepocessing" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/nipype_sepAnat.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Pipeline" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="prepocessing" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Pipeline.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <method />
@@ -320,18 +338,20 @@
       <option name="USE_KEYWORD" value="false" />
       <method />
     </configuration>
-    <list size="4">
+    <list size="5">
       <item index="0" class="java.lang.String" itemvalue="Python.preprocessing" />
       <item index="1" class="java.lang.String" itemvalue="Python.test" />
       <item index="2" class="java.lang.String" itemvalue="Python.nipype_preprocessing" />
       <item index="3" class="java.lang.String" itemvalue="Python.nipype_sepAnat" />
+      <item index="4" class="java.lang.String" itemvalue="Python.Pipeline" />
     </list>
     <recent_temporary>
-      <list size="4">
-        <item index="0" class="java.lang.String" itemvalue="Python.nipype_sepAnat" />
-        <item index="1" class="java.lang.String" itemvalue="Python.nipype_preprocessing" />
-        <item index="2" class="java.lang.String" itemvalue="Python.preprocessing" />
-        <item index="3" class="java.lang.String" itemvalue="Python.test" />
+      <list size="5">
+        <item index="0" class="java.lang.String" itemvalue="Python.Pipeline" />
+        <item index="1" class="java.lang.String" itemvalue="Python.nipype_sepAnat" />
+        <item index="2" class="java.lang.String" itemvalue="Python.nipype_preprocessing" />
+        <item index="3" class="java.lang.String" itemvalue="Python.preprocessing" />
+        <item index="4" class="java.lang.String" itemvalue="Python.test" />
       </list>
     </recent_temporary>
   </component>
@@ -349,7 +369,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="1047" y="37" width="1176" height="1332" extended-state="0" />
+    <frame x="1340" y="32" width="1176" height="1332" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.13419913" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -357,7 +377,7 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3289597" sideWeight="0.50352466" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.31941032" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32923833" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.29227054" sideWeight="0.49647534" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.29227054" sideWeight="0.49647534" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32286635" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
@@ -412,18 +432,16 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/nipype_sepAnat.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="17" column="22" selection-start-line="17" selection-start-column="22" selection-end-line="17" selection-end-column="22" />
-          <folding>
-            <element signature="e#0#62#0" expanded="true" />
-          </folding>
+        <state vertical-scroll-proportion="1.6698003">
+          <caret line="413" column="63" selection-start-line="413" selection-start-column="63" selection-end-line="413" selection-end-column="63" />
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Pipeline.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.9518214">
-          <caret line="54" column="96" selection-start-line="54" selection-start-column="96" selection-end-line="54" selection-end-column="96" />
+        <state vertical-scroll-proportion="0.17626321">
+          <caret line="10" column="71" selection-start-line="10" selection-start-column="71" selection-end-line="10" selection-end-column="71" />
           <folding>
             <element signature="e#0#62#0" expanded="true" />
           </folding>

@@ -10,12 +10,16 @@ import nipype.interfaces.utility as util    # utility
 # 1. Variable Specification
 #======================================================================
 
-experiment_dir = '/Volumes/homes/Shafquat/'             # location of data folder
+# Name of subjects folder
+subjectsfolder = '/gz_Subjects/'
+
+# Location of experiment directory
+experiment_dir = '/Volumes/homes/Shafquat/'
 
 # Count all the subfolders within a given directory
-subs = next(os.walk(experiment_dir+'/Subjects/'))[1]
+subs = next(os.walk(experiment_dir+subjectsfolder))[1]
 subject_list = [] # Initialize an empty list to store subjects
-session_list = ['Run1']#, 'Run2', 'Run3', 'Run4', 'Run5']              # list of session identifiers
+session_list = ['Run1', 'Run2', 'Run3', 'Run4', 'Run5']              # list of session identifiers
 # Set a last run based on the list of runs
 last_run = session_list[-1]                 # Make sure to change the hardcoded last_run value within the picklast function below
 
@@ -76,6 +80,7 @@ mean2anatAnts = pe.Node(ants.Registration(args='--float',
                                             write_composite_transform = True,
                                             convergence_threshold=[1e-06],
                                             convergence_window_size=[10],
+                                            output_transform_prefix='mean2anat_',
                                             output_warped_image='output_warped_image.nii.gz'),
                                             name='mean2anatAnts')
 
@@ -102,7 +107,7 @@ anat2MNI = pe.Node(ants.Registration(args='--float',
                                             winsorize_lower_quantile = 0.005,
                                             winsorize_upper_quantile = 0.995,
                                             num_threads = 2,
-                                            #output_transform_prefix = "MNI_warped_",
+                                            output_transform_prefix='anat2MNI_',
                                             output_warped_image='MNI_warped_image.nii.gz'),
                                             name='anat2MNI')
 anat2MNI.plugin_args = {'qsub_args': '-pe orte 4',
@@ -136,22 +141,12 @@ smooth = pe.Node(afni.BlurInMask(fwhm=6,
                                     automask = True),
                                     name="smooth")
 
-
 #======================================================================
-# 3. SPECIFY WORKFLOWS
+# 3. INPUT/OUTPUT SPECIFICATION (func)
 #======================================================================
 # Functional Workflow
 preproc = pe.Workflow(name='preproc')
 preproc.base_dir = os.path.join(experiment_dir, working_dir)
-
-# Anatomical Workflow
-preprocAnat = pe.Workflow(name='anatpreproc')
-preprocAnat.base_dir = os.path.join(experiment_dir, working_dir)
-
-
-#======================================================================
-# 3. INPUT/OUTPUT SPECIFICATION (func)
-#======================================================================
 
 # Infosource - a function free node to iterate over the list of subject names
 infosource = pe.Node(util.IdentityInterface(fields=['subject_id',
@@ -162,15 +157,14 @@ infosource.iterables = [('subject_id', subject_list),
                         ('session_id', session_list)]
 
 # SelectFiles for Input
-templates = {'anat': experiment_dir + '/Subjects/{subject_id}/Anatomical/*.nii.gz',
-             'func': experiment_dir + '/Subjects/{subject_id}/{session_id}/{session_id}.nii.gz'}
+templates = {'anat': experiment_dir + subjectsfolder + '{subject_id}/Anatomical/*.nii.gz',
+             'func': experiment_dir + subjectsfolder + '{subject_id}/{session_id}/{session_id}.nii.gz'}
 
 
 selectfiles = pe.Node(nio.SelectFiles(templates), name="selectfiles")
 
 # DataSink for Output
-datasink = pe.Node(nio.DataSink(base_directory=experiment_dir,
-                         container=output_dir),
+datasink = pe.Node(nio.DataSink(base_directory=experiment_dir + "OUTPUT"),
                 name="datasink")
 
 
@@ -179,6 +173,8 @@ substitutions = [('_subject_id', ''),
                  ('_session_id_', '')]
 datasink.inputs.substitutions = substitutions
 
+preproc.connect([(infosource, datasink, [('subject_id', 'container')])
+                 ])
 
 #======================================================================
 # 4. Motion Correction
@@ -218,27 +214,22 @@ preproc.connect([(sliceTiming, motionCorrection, [('slice_time_corrected_file', 
                  (extract_ref, motionCorrection, [('roi_file', 'basefile')])
                  ])
 
-
-#======================================================================
-# 6. Connecting Workflows to datasink
-#======================================================================
-
 # Connect all components of the preprocessing workflow
 # Connect SelectFiles and DataSink to the workflow
 preproc.connect([(infosource, selectfiles, [('subject_id', 'subject_id'),
                                             ('session_id', 'session_id')]),
                  (selectfiles, volTrim, [('func', 'in_file')]),
                  (volTrim, sliceTiming, [('roi_file', 'in_file')]),
-                 (volTrim, datasink, [('roi_file', 'trimmed')]),
-                 (sliceTiming, datasink, [('slice_time_corrected_file', 'sliced')]),
-                 (motionCorrection, datasink, [('out_file', 'motion_correct')]),
-                 (motionCorrection, datasink, [('md1d_file', 'mc_md1d')]),
-                 (motionCorrection, datasink, [('oned_file', 'mc_oned')]),
+                 (volTrim, datasink, [('roi_file', '@trimmed')]),
+                 (sliceTiming, datasink, [('slice_time_corrected_file', '@sliced')]),
+                 (motionCorrection, datasink, [('out_file', '@motion_correct')]),
+                 (motionCorrection, datasink, [('md1d_file', '@motion_correct.@mc_md1d')]),
+                 (motionCorrection, datasink, [('oned_file', '@motion_correct.@mc_oned')]),
                                   ])
 
 
 #======================================================================
-# 6.5 New preprocess pipeline to retrieve motion corrected files
+# 6 New workflow to retrieve motion corrected files
 #======================================================================
 
 # Workflow after motion correction
@@ -253,40 +244,39 @@ infosource2 = pe.Node(util.IdentityInterface(fields=['subject_id',
 infosource2.iterables = [('subject_id', subject_list)]
 
 # Select the last run for each subject
-templates2 = {'func2': experiment_dir + 'output_firstSteps/motion_correct/'+ last_run + '_{subject_id}/*.nii.gz',
-              'anatomical': experiment_dir + '/Subjects/{subject_id}/Anatomical/*.nii.gz',
-              'MNI': working_dir + 'Template/MYtemplate_2mm.nii'}
+templates2 = {'func2': experiment_dir + 'OUTPUT/{subject_id}/' + last_run + '_{subject_id}/' + last_run + '_roi_st_volreg.nii.gz',
+              'anatomical': experiment_dir + subjectsfolder + '{subject_id}/Anatomical/*.nii.gz',
+              'MNI': experiment_dir + 'Template/MYtemplate_2mm.nii'}
 
 selectfiles2 = pe.Node(nio.SelectFiles(templates2), name="selectfiles2")
 
 # DataSink
-datasink2 = pe.Node(nio.DataSink(base_directory=experiment_dir,
-                         container=output_dir),
+datasink2 = pe.Node(nio.DataSink(base_directory=experiment_dir + "OUTPUT"),
                 name="datasink2")
 
 # Use the following DataSink output substitutions
 substitutions = [('_subject_id_', '')]
 datasink2.inputs.substitutions = substitutions
 
+preproc.connect([(infosource2, datasink2, [('subject_id', 'container')])
+                 ])
+
 
 # Set up a extract node for the last run after motion control and get the mean
 preproc2.connect([(infosource2, selectfiles2, [('subject_id', 'subject_id')]),
                   (selectfiles2, tstat, [('func2', 'in_file')]),
-                  (tstat, datasink2, [('out_file', 'tstat')]),
+                  (tstat, datasink2, [('out_file', '@tstat')]),
                   (selectfiles2, mean2anatAnts, [('anatomical', 'fixed_image')]),
                   (tstat, mean2anatAnts, [('out_file', 'moving_image')]),
-                  (mean2anatAnts, datasink2, [('warped_image', 'mean2anat')]),
-                  (mean2anatAnts, datasink2, [('composite_transform', 'mean2anatMatrix_Composites')])
+                  (mean2anatAnts, datasink2, [('warped_image', '@mean2anat')]),
+                  (mean2anatAnts, datasink2, [('composite_transform', '@mean2anatMatrix_Composites')])
                   ])
 
-#======================================================================
-# 8. Compute registration between subjects' structural and MNI template
-#======================================================================
-
+# Set up a extract node for the Anat to MNI template
 preproc2.connect([(selectfiles2, anat2MNI, [('MNI', 'fixed_image')]),
                   (selectfiles2, anat2MNI, [('anatomical', 'moving_image')]),
-                  (anat2MNI, datasink2, [('warped_image', 'MNI_warped')]),
-                  (anat2MNI, datasink2, [('composite_transform', 'MNI_warpedMatrix')])
+                  (anat2MNI, datasink2, [('warped_image', '@MNI_warped')]),
+                  (anat2MNI, datasink2, [('composite_transform', '@MNI_warpedMatrix')])
                    ])
 
 #======================================================================
@@ -302,27 +292,30 @@ infosourceReg = pe.Node(util.IdentityInterface(fields=['subject_id',
                                             'session_id']),
                   name="infosourceReg")
 
-infosourceReg.iterables = [('subject_id', subject_list)]
+infosourceReg.iterables = [('subject_id', subject_list),
+                        ('session_id', session_list)]
 
 # secifying files for select files
-templatesReg = {'mean2anatMatrix': experiment_dir + 'output_firstSteps/mean2anatMatrix_Composites/{subject_id}/*.h5',
-                'MNI_warpedMatrix': experiment_dir + 'output_firstSteps/MNI_warpedMatrix/{subject_id}/*.h5',
-                'MNI': working_dir + 'Template/MYtemplate_3mm.nii',
-                'func_mc': experiment_dir + 'output_firstSteps/motion_correct/{session_id}_{subject_id}/*.nii.gz'}
+templatesReg = {'mean2anatMatrix': experiment_dir + 'OUTPUT/{subject_id}/mean2anat_Composite.h5',
+                'MNI_warpedMatrix': experiment_dir + 'OUTPUT/{subject_id}/anat2MNI_Composite.h5',
+                'MNI': experiment_dir + 'Template/MYtemplate_3mm.nii',
+                'func_mc': experiment_dir + 'OUTPUT/{subject_id}/{session_id}_{subject_id}/{session_id}_roi_st_volreg.nii.gz'}
 
 selectfilesReg = pe.Node(nio.SelectFiles(templatesReg), name="selectfilesReg")
 
 # DataSink
-datasinkReg = pe.Node(nio.DataSink(base_directory=experiment_dir,
-                         container=output_dir),
+datasinkReg = pe.Node(nio.DataSink(base_directory=experiment_dir + "OUTPUT"),
                 name="datasinkReg")
-
+preprocReg.connect([(infosourceReg, datasinkReg, [('subject_id', 'container')])
+                 ])
 # Use the following DataSink output substitutions
 substitutions = [('_subject_id', ''),
                  ('_session_id_', '')]
 datasinkReg.inputs.substitutions = substitutions
 
-preprocReg.connect([(infosource, selectfilesReg, [('subject_id', 'subject_id'),
+
+
+preprocReg.connect([(infosourceReg, selectfilesReg, [('subject_id', 'subject_id'),
                                             ('session_id', 'session_id')]),
                     (selectfilesReg, merge, [('MNI_warpedMatrix', 'in2')]),
                     (selectfilesReg, merge, [('mean2anatMatrix', 'in1')]),
@@ -331,9 +324,9 @@ preprocReg.connect([(infosource, selectfilesReg, [('subject_id', 'subject_id'),
                     (selectfilesReg, applyTransFunc, [('MNI', 'reference_image')]),
                     (applyTransFunc, refit, [('output_image', 'in_file')]),
                     (refit, smooth, [('out_file', 'in_file')]),
-                    (applyTransFunc, datasinkReg, [('output_image', 'warpedfunc')]),
-                    (refit, datasinkReg, [('out_file', 'refitted')]),
-                    (smooth, datasinkReg, [('out_file', 'completed_file')]),
+                    (applyTransFunc, datasinkReg, [('output_image', '@warpedfunc')]),
+                    (refit, datasinkReg, [('out_file', '@refitted')]),
+                    (smooth, datasinkReg, [('out_file', '@completed_file')]),
                    ])
 
 
@@ -343,7 +336,7 @@ preprocReg.connect([(infosource, selectfilesReg, [('subject_id', 'subject_id'),
 
 # Run the Nodes
 # Motion Correciton Workflow
-#preproc.run('MultiProc', plugin_args={'n_procs': 3})
+preproc.run('MultiProc', plugin_args={'n_procs': 3})
 
 # Calculate Composite Transform for image normalization Workflow
 preproc2.run('MultiProc', plugin_args={'n_procs': 3})
@@ -351,18 +344,3 @@ preproc2.run('MultiProc', plugin_args={'n_procs': 3})
 # Applying Composite Transform and Spatial Smoothing Workflow
 preprocReg.run('MultiProc', plugin_args={'n_procs': 3})
 
-#======================================================================
-# . Return output to subject directories
-#======================================================================
-"""
-# get all the subfolders within a given directory
-num_folders = next(os.walk(experiment_dir+'/output_firstSteps/final_output'))[1]
-
-# move file
-for folder in num_folders:
-    dir_files = os.listdir(experiment_dir+'/output_firstSteps/final_output/'+folder+'/')
-    for file_name in dir_files:
-        full_file_name = experiment_dir+'/output_firstSteps/final_output/'+folder+'/' + '/' + file_name
-        if os.path.isfile(full_file_name):
-            shutil.copy(full_file_name, experiment_dir+'/Subjects/'+folder[-6:]+'/'+folder[0:4]+'/')
-"""
