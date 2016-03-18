@@ -16,6 +16,10 @@ subjectsfolder = '/gz_Subjects/'
 # Location of experiment directory
 experiment_dir = '/Volumes/homes/Shafquat/'
 
+# MNI Location
+MNI_2mm = experiment_dir + 'Template/MYtemplate_2mm.nii'
+MNI_3mm = experiment_dir + 'Template/MYtemplate_3mm.nii'
+
 # Count all the subfolders within a given directory
 subs = next(os.walk(experiment_dir+subjectsfolder))[1]
 subject_list = [] # Initialize an empty list to store subjects
@@ -246,7 +250,7 @@ infosource2.iterables = [('subject_id', subject_list)]
 # Select the last run for each subject
 templates2 = {'func2': experiment_dir + 'OUTPUT/{subject_id}/' + last_run + '_{subject_id}/' + last_run + '_roi_st_volreg.nii.gz',
               'anatomical': experiment_dir + subjectsfolder + '{subject_id}/Anatomical/*.nii.gz',
-              'MNI': experiment_dir + 'Template/MYtemplate_2mm.nii'}
+              'MNI': MNI_2mm}
 
 selectfiles2 = pe.Node(nio.SelectFiles(templates2), name="selectfiles2")
 
@@ -298,7 +302,7 @@ infosourceReg.iterables = [('subject_id', subject_list),
 # secifying files for select files
 templatesReg = {'mean2anatMatrix': experiment_dir + 'OUTPUT/{subject_id}/mean2anat_Composite.h5',
                 'MNI_warpedMatrix': experiment_dir + 'OUTPUT/{subject_id}/anat2MNI_Composite.h5',
-                'MNI': experiment_dir + 'Template/MYtemplate_3mm.nii',
+                'MNI': MNI_3mm,
                 'func_mc': experiment_dir + 'OUTPUT/{subject_id}/{session_id}_{subject_id}/{session_id}_roi_st_volreg.nii.gz'}
 
 selectfilesReg = pe.Node(nio.SelectFiles(templatesReg), name="selectfilesReg")
