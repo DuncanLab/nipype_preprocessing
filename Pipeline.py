@@ -27,7 +27,7 @@ last_run = session_list[-1]                 # Make sure to change the hardcoded 
 for subject in subs:
     subject_list.append(subject)
 
-output_dir = 'output_firstSteps'          # name of output folder
+output_dir = 'OUTPUT'          # name of output folder
 working_dir = 'workingdir_firstSteps'     # name of working directory
 
 number_of_slices = 40                     # number of slices in volume
@@ -164,7 +164,7 @@ templates = {'anat': experiment_dir + subjectsfolder + '{subject_id}/Anatomical/
 selectfiles = pe.Node(nio.SelectFiles(templates), name="selectfiles")
 
 # DataSink for Output
-datasink = pe.Node(nio.DataSink(base_directory=experiment_dir + "OUTPUT"),
+datasink = pe.Node(nio.DataSink(base_directory=experiment_dir + output_dir),
                 name="datasink")
 
 
@@ -251,14 +251,14 @@ templates2 = {'func2': experiment_dir + 'OUTPUT/{subject_id}/' + last_run + '_{s
 selectfiles2 = pe.Node(nio.SelectFiles(templates2), name="selectfiles2")
 
 # DataSink
-datasink2 = pe.Node(nio.DataSink(base_directory=experiment_dir + "OUTPUT"),
+datasink2 = pe.Node(nio.DataSink(base_directory=experiment_dir + output_dir),
                 name="datasink2")
 
 # Use the following DataSink output substitutions
 substitutions = [('_subject_id_', '')]
 datasink2.inputs.substitutions = substitutions
 
-preproc.connect([(infosource2, datasink2, [('subject_id', 'container')])
+preproc2.connect([(infosource2, datasink2, [('subject_id', 'container')])
                  ])
 
 
@@ -304,7 +304,7 @@ templatesReg = {'mean2anatMatrix': experiment_dir + 'OUTPUT/{subject_id}/mean2an
 selectfilesReg = pe.Node(nio.SelectFiles(templatesReg), name="selectfilesReg")
 
 # DataSink
-datasinkReg = pe.Node(nio.DataSink(base_directory=experiment_dir + "OUTPUT"),
+datasinkReg = pe.Node(nio.DataSink(base_directory=experiment_dir + output_dir),
                 name="datasinkReg")
 preprocReg.connect([(infosourceReg, datasinkReg, [('subject_id', 'container')])
                  ])
@@ -333,6 +333,11 @@ preprocReg.connect([(infosourceReg, selectfilesReg, [('subject_id', 'subject_id'
 #======================================================================
 # 7. Run, Forrest, Run!
 #======================================================================
+
+# Write graphs to visualize the workflows
+preproc.write_graph(graph2use='colored', simple_form=True)
+preproc2.write_graph(graph2use='colored', simple_form=True)
+preprocReg.write_graph(graph2use='colored', simple_form=True)
 
 # Run the Nodes
 # Motion Correciton Workflow
