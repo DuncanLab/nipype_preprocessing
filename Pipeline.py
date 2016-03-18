@@ -229,7 +229,7 @@ preproc.connect([(infosource, selectfiles, [('subject_id', 'subject_id'),
 
 
 #======================================================================
-# 6 New workflow to retrieve motion corrected files
+# 5. New workflow to retrieve motion corrected files
 #======================================================================
 
 # Workflow after motion correction
@@ -280,7 +280,7 @@ preproc2.connect([(selectfiles2, anat2MNI, [('MNI', 'fixed_image')]),
                    ])
 
 #======================================================================
-# 8. register functional images anatomical and MNI template using ANTS in a new workflow
+# 6. register functional images anatomical and MNI template using ANTS in a new workflow
 #======================================================================
 
 # Registration Workflow
@@ -331,7 +331,7 @@ preprocReg.connect([(infosourceReg, selectfilesReg, [('subject_id', 'subject_id'
 
 
 #======================================================================
-# 9. Run, Forrest, Run!
+# 7. Run, Forrest, Run!
 #======================================================================
 
 # Run the Nodes
