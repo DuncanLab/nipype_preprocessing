@@ -31,8 +31,8 @@ last_run = session_list[-1]                 # Make sure to change the hardcoded 
 for subject in subs:
     subject_list.append(subject)
 
-output_dir = 'OUTPUT'          # name of output folder
-working_dir = 'workingdir_firstSteps'     # name of working directory
+output_dir = 'OUTPUT_serial'          # name of output folder
+working_dir = 'workingdir_firstSteps_serial'     # name of working directory
 
 number_of_slices = 40                     # number of slices in volume
 TR = 2.0                                  # time repetition of volume
@@ -345,11 +345,11 @@ preprocReg.write_graph(graph2use='colored', simple_form=True)
 
 # Run the Nodes
 # Motion Correciton Workflow
-preproc.run('MultiProc', plugin_args={'n_procs': 3})
+preproc.run('MultiProc', plugin_args={'n_procs': 1})
 
 # Calculate Composite Transform for image normalization Workflow
-preproc2.run('MultiProc', plugin_args={'n_procs': 3})
+preproc2.run('MultiProc', plugin_args={'n_procs': 1})
 
 # Applying Composite Transform and Spatial Smoothing Workflow
-preprocReg.run('MultiProc', plugin_args={'n_procs': 3})
+preprocReg.run('MultiProc', plugin_args={'n_procs': 1})
 
