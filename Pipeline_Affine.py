@@ -31,8 +31,8 @@ last_run = session_list[-1]                 # Make sure to change the hardcoded 
 for subject in subs:
     subject_list.append(subject)
 
-output_dir = 'OUTPUT'          # name of output folder
-working_dir = 'workingdir_firstSteps'     # name of working directory
+output_dir = 'OUTPUT_Affine'          # name of output folder
+working_dir = 'workingdir_firstSteps_Affine'     # name of working directory
 
 number_of_slices = 40                     # number of slices in volume
 TR = 2.0                                  # time repetition of volume
@@ -90,33 +90,30 @@ mean2anatAnts = pe.Node(ants.Registration(args='--float',
 
 
 anat2MNI = pe.Node(ants.Registration(args='--float',
-                                            metric=['Mattes'] * 2 + [['Mattes', 'CC']],
-                                            metric_weight=[1] * 2 + [[0.5, 0.5]],
-                                            radius_or_number_of_bins = [32] * 2 + [[32, 4]],
-                                            sampling_strategy = ['Regular'] * 2 + [[None, None]],
-                                            sampling_percentage = [0.3] * 2 + [[None, None]],
-                                            use_histogram_matching = [False] * 2 + [True],
-                                            shrink_factors=[[3, 2, 1]] * 2 + [[4, 2, 1]],
-                                            smoothing_sigmas=[[4, 2, 1]] * 2 + [[1, 0.5, 0]],
-                                            sigma_units = ['vox'] * 3,
-                                            transforms=['Rigid', 'Affine', 'SyN'],
-                                            transform_parameters=[(0.1,),(0.1,), (0.2, 3.0, 0.0)],
-                                            number_of_iterations=[[10000, 11110, 11110]] * 2 + [[100, 30, 20]],
+                                            metric=['Mattes'] * 2,
+                                            metric_weight=[1] * 2,
+                                            radius_or_number_of_bins = [32] * 2,
+                                            sampling_strategy = ['Regular'] * 2,
+                                            sampling_percentage = [0.3] * 2,
+                                            use_histogram_matching = [False] * 2,
+                                            shrink_factors=[[3, 2, 1]] * 2,
+                                            smoothing_sigmas=[[4, 2, 1]] * 2,
+                                            sigma_units = ['vox'] * 2,
+                                            transforms=['Rigid', 'Affine'],
+                                            transform_parameters=[(0.1,),(0.1,)],
+                                            number_of_iterations=[[10000, 11110, 11110]] * 2,
                                             write_composite_transform = True,
                                             collapse_output_transforms = True,
                                             initial_moving_transform_com = True,
-                                            convergence_threshold= [1.e-8] * 2 + [-0.01],
-                                            convergence_window_size=[20] * 2 + [5],
-                                            use_estimate_learning_rate_once = [True] * 3,
+                                            convergence_threshold= [1.e-8] * 2,
+                                            convergence_window_size=[20] * 2,
+                                            use_estimate_learning_rate_once = [True] * 2,
                                             winsorize_lower_quantile = 0.005,
                                             winsorize_upper_quantile = 0.995,
                                             num_threads = 2,
                                             output_transform_prefix='anat2MNI_',
                                             output_warped_image='MNI_warped_image.nii.gz'),
                                             name='anat2MNI')
-anat2MNI.plugin_args = {'qsub_args': '-pe orte 4',
-                       'sbatch_args': '--mem=6G -c 4'}
-
 
 
 merge = pe.Node(util.Merge(2), iterfield=['in2'], name='mergexfm')
@@ -300,8 +297,8 @@ infosourceReg.iterables = [('subject_id', subject_list),
                         ('session_id', session_list)]
 
 # secifying files for select files
-templatesReg = {'mean2anatMatrix': experiment_dir + output_dir + '/{subject_id}/mean2anat_Composite.h5',
-                'MNI_warpedMatrix': experiment_dir + output_dir + '/{subject_id}/anat2MNI_Composite.h5',
+templatesReg = {'mean2anatMatrix': experiment_dir + output_dir + '/{subject_id}/{subject_id}/mean2anat_Composite.h5',
+                'MNI_warpedMatrix': experiment_dir + output_dir + '/{subject_id}/{subject_id}/anat2MNI_Composite.h5',
                 'MNI': MNI_3mm,
                 'func_mc': experiment_dir + output_dir + '/{subject_id}/{session_id}_{subject_id}/{session_id}_roi_st_volreg.nii.gz'}
 
@@ -339,16 +336,16 @@ preprocReg.connect([(infosourceReg, selectfilesReg, [('subject_id', 'subject_id'
 #======================================================================
 
 # Write graphs to visualize the workflows
-preproc.write_graph(graph2use='colored', simple_form=True)
-preproc2.write_graph(graph2use='colored', simple_form=True)
-preprocReg.write_graph(graph2use='colored', simple_form=True)
+#preproc.write_graph(graph2use='colored', simple_form=True)
+#preproc2.write_graph(graph2use='colored', simple_form=True)
+#preprocReg.write_graph(graph2use='colored', simple_form=True)
 
 # Run the Nodes
 # Motion Correciton Workflow
-preproc.run('MultiProc', plugin_args={'n_procs': 3})
+#preproc.run('MultiProc', plugin_args={'n_procs': 3})
 
 # Calculate Composite Transform for image normalization Workflow
-preproc2.run('MultiProc', plugin_args={'n_procs': 3})
+#preproc2.run('MultiProc', plugin_args={'n_procs': 3})
 
 # Applying Composite Transform and Spatial Smoothing Workflow
 preprocReg.run('MultiProc', plugin_args={'n_procs': 3})
